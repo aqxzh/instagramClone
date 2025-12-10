@@ -70,7 +70,7 @@ export default function FeedScreen() {
         <ThemedView style={styles.container}>
             <FlatList
                 data={posts}
-                renderItem={({ item }) => <PostCard post={item} onLike={handleLike} />}
+                renderItem={({ item }) => <PostCard post={item} onLike={handleLike} onDelete={() => fetchPosts()} />}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.list}
                 onRefresh={fetchPosts}

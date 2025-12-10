@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, TextInput, FlatList } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
 import { ThemedText } from './themed-text';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
@@ -22,9 +22,9 @@ export type Post = {
     };
 };
 
-type PostCardProps = { post: Post, onLike: (postId: string) => void };
+type PostCardProps = { post: Post, onLike: (postId: string) => void, onDelete?: (postId: string) => void };
 
-export const PostCard = ({ post, onLike }: PostCardProps) => {
+export const PostCard = ({ post, onLike, onDelete }: PostCardProps) => {
     const { authState } = useAuth();
     const isLiked = post.likes.some(like => like.userId === authState?.userId);
 
@@ -35,6 +35,24 @@ export const PostCard = ({ post, onLike }: PostCardProps) => {
 
     const handleLike = () => {
         onLike(post.id);
+    };
+
+    const handleDelete = async () => {
+        try {
+            console.log('Requesting delete for post', post.id);
+            const res = await axios.delete(`${API_URL}/posts/${post.id}`);
+            console.log('Delete response', res && res.status, res && res.data);
+            if (onDelete) onDelete(post.id);
+        } catch (e) {
+            console.error('Error deleting post', post.id, e);
+        }
+    };
+
+    const confirmDelete = () => {
+        Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: handleDelete },
+        ]);
     };
 
     const fetchComments = async () => {
@@ -76,6 +94,11 @@ export const PostCard = ({ post, onLike }: PostCardProps) => {
                     style={styles.avatar}
                 />
                 <ThemedText style={styles.username}>{post.author.username}</ThemedText>
+                {authState?.userId === post.author.id && (
+                    <TouchableOpacity onPress={confirmDelete} style={styles.deleteButton}>
+                        <MaterialIcons name="delete" size={22} color="gray" />
+                    </TouchableOpacity>
+                )}
             </View>
             {post.imageUrl ? (
                 <Image source={{ uri: post.imageUrl }} style={styles.image} />
@@ -169,6 +192,10 @@ const styles = StyleSheet.create({
     actionText: {
         marginLeft: 5,
         color: 'gray',
+    },
+    deleteButton: {
+        marginLeft: 'auto',
+        padding: 6,
     },
     commentsSection: {
         padding: 10,

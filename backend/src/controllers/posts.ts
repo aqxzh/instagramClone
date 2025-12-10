@@ -54,3 +54,26 @@ export const createPost = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Something went wrong while creating the post', details: error.message });
   }
 };
+
+export const deletePost = async (req: AuthRequest, res: Response) => {
+  const { postId } = req.params;
+  const userId = req.userId;
+
+  console.log('deletePost called for', postId, 'by user', userId);
+
+  try {
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+    if (post.authorId !== userId) return res.status(403).json({ error: 'Not allowed' });
+
+    await prisma.comment.deleteMany({ where: { postId } });
+    await prisma.like.deleteMany({ where: { postId } });
+    await prisma.post.delete({ where: { id: postId } });
+
+    console.log('Post deleted', postId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ error: 'Something went wrong while deleting the post' });
+  }
+};
